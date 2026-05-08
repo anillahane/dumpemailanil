@@ -626,7 +626,8 @@ const AuditDetailsPage = () => {
                       </div>
                       <Button variant="outline" size="sm" onClick={addCheckpointRow}><Plus size={15} /> Add Checkpoint</Button>
                     </div>
-                    <div className="overflow-x-auto">
+                    {/* Desktop table */}
+                    <div className="overflow-x-auto hidden sm:block">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/30 text-muted-foreground">
                           <tr>
@@ -698,6 +699,103 @@ const AuditDetailsPage = () => {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                    {/* Mobile cards */}
+                    <div className="sm:hidden divide-y">
+                      {checkpointRows.map((row, index) => (
+                        <div key={`${row.checkpointCode}-${index}`} className={`p-4 space-y-3 ${row.mandatory && row.result === "Pending" ? "bg-destructive/5" : ""}`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1">
+                              <p className="text-xs text-muted-foreground mb-1">Checkpoint ID</p>
+                              <div className="flex items-center gap-1">
+                                <Input disabled={reportLocked} value={row.checkpointCode} onChange={e => updateCheckpointRow(index, "checkpointCode", e.target.value)} />
+                                {row.mandatory && <Badge variant="destructive" className="text-[10px] px-1 shrink-0">M</Badge>}
+                              </div>
+                            </div>
+                            <Button variant="ghost" size="icon" disabled={reportLocked || row.mandatory} onClick={() => removeCheckpointRow(index)}><Trash2 size={14} /></Button>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Process</p>
+                            <Input disabled={reportLocked} value={row.process} onChange={e => updateCheckpointRow(index, "process", e.target.value)} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Account / Ref</p>
+                            <Input disabled={reportLocked} value={row.accountRef} onChange={e => updateCheckpointRow(index, "accountRef", e.target.value)} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Checkpoint</p>
+                            <Textarea disabled={reportLocked} value={row.checkpoint} rows={2} onChange={e => updateCheckpointRow(index, "checkpoint", e.target.value)} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Expected Control</p>
+                            <Textarea disabled={reportLocked} value={row.expectedControl} rows={2} onChange={e => updateCheckpointRow(index, "expectedControl", e.target.value)} />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Sample Size</p>
+                              <Input disabled={reportLocked} type="number" min="0" value={row.sampleSize} onChange={e => updateCheckpointRow(index, "sampleSize", e.target.value)} />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Exception Value</p>
+                              <Input disabled={reportLocked} type="number" min="0" value={row.exceptionValue} onChange={e => updateCheckpointRow(index, "exceptionValue", e.target.value)} />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Evidence Type</p>
+                            <Input disabled={reportLocked} value={row.evidence} onChange={e => updateCheckpointRow(index, "evidence", e.target.value)} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Evidence Files</p>
+                            <label className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border cursor-pointer hover:bg-accent ${reportLocked ? "opacity-50 pointer-events-none" : ""}`}>
+                              <Upload size={12} /> Upload
+                              <input type="file" multiple className="hidden" onChange={e => handleEvidenceUpload(index, e.target.files)} />
+                            </label>
+                            <div className="mt-1 space-y-0.5">
+                              {row.evidenceFiles.map((f, fi) => (
+                                <div key={fi} className="flex items-center justify-between gap-1 text-[11px] bg-muted/40 px-1.5 py-0.5 rounded">
+                                  <span className="truncate max-w-[120px]" title={f.name}>{f.name}</span>
+                                  <button disabled={reportLocked} onClick={() => removeEvidenceFile(index, fi)} className="text-destructive hover:opacity-70"><Trash2 size={10} /></button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Result</p>
+                              <Select disabled={reportLocked} value={row.result} onValueChange={value => updateCheckpointRow(index, "result", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Compliant">Compliant</SelectItem><SelectItem value="Non-Compliant">Non-Compliant</SelectItem><SelectItem value="Observation">Observation</SelectItem><SelectItem value="Not Applicable">Not Applicable</SelectItem></SelectContent></Select>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Severity</p>
+                              <Select disabled={reportLocked} value={row.severity} onValueChange={value => updateCheckpointRow(index, "severity", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem><SelectItem value="Critical">Critical</SelectItem></SelectContent></Select>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Owner</p>
+                              <Input disabled={reportLocked} value={row.owner} onChange={e => updateCheckpointRow(index, "owner", e.target.value)} />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Target Date</p>
+                              <Input disabled={reportLocked} type="date" value={row.targetDate} onChange={e => updateCheckpointRow(index, "targetDate", e.target.value)} />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Auditor Remarks</p>
+                            <Textarea disabled={reportLocked} value={row.remarks} rows={2} onChange={e => updateCheckpointRow(index, "remarks", e.target.value)} />
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Reviewer Comment</p>
+                            <Textarea
+                              placeholder={user?.role === "reviewer" || user?.role === "admin" ? "Add reviewer comment..." : "Reviewer to comment"}
+                              disabled={user?.role !== "reviewer" && user?.role !== "admin"}
+                              value={row.reviewerComment}
+                              rows={2}
+                              onChange={e => updateCheckpointRow(index, "reviewerComment", e.target.value)}
+                              className={row.reviewerComment ? "border-primary/40 bg-primary/5" : ""}
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
