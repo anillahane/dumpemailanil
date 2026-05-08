@@ -826,7 +826,8 @@ const AuditDetailsPage = () => {
                       </div>
                       <Button variant="outline" size="sm" onClick={addObservationRow}><Plus size={15} /> Add Observation</Button>
                     </div>
-                    <div className="overflow-x-auto border-b">
+                    {/* Desktop Issues Summary table */}
+                    <div className="overflow-x-auto border-b hidden sm:block">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/30 text-muted-foreground">
                           <tr>
@@ -850,10 +851,40 @@ const AuditDetailsPage = () => {
                         </tbody>
                       </table>
                     </div>
+                    {/* Mobile Issues Summary cards */}
+                    <div className="sm:hidden divide-y border-b">
+                      {issueSummaryRows.map(row => (
+                        <div key={row.severity} className="p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Severity</span>
+                            <span className="text-sm font-medium">{row.severity}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Total</p>
+                              <p className="text-sm font-medium">{row.total}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Open</p>
+                              <p className="text-sm font-medium">{row.open}</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-muted-foreground">Closed</p>
+                              <p className="text-sm font-medium">{row.closed}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Value at Risk</span>
+                            <span className="text-sm font-medium">₹{row.valueAtRisk.toLocaleString("en-IN")}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                     <div className="bg-muted/20 px-4 py-3 border-b">
                       <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Issue-wise editable details</h4>
                     </div>
-                    <div className="overflow-x-auto">
+                    {/* Desktop Issue-wise details table */}
+                    <div className="overflow-x-auto hidden sm:block">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/30 text-muted-foreground">
                           <tr>
@@ -882,6 +913,51 @@ const AuditDetailsPage = () => {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                    {/* Mobile Issue-wise details cards */}
+                    <div className="sm:hidden divide-y">
+                      {editableObservations.map((observation, index) => (
+                        <div key={`${observation.issueId}-${index}`} className="p-4 space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Issue ID</p>
+                              <Input value={observation.issueId} onChange={e => updateObservationRow(index, "issueId", e.target.value)} />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Category</p>
+                              <Input value={observation.issueCategory} onChange={e => updateObservationRow(index, "issueCategory", e.target.value)} />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Observation</p>
+                            <Textarea value={observation.observation} rows={2} onChange={e => updateObservationRow(index, "observation", e.target.value)} />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Severity</p>
+                              <Select value={observation.issueSeverity} onValueChange={value => updateObservationRow(index, "issueSeverity", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem><SelectItem value="Critical">Critical</SelectItem></SelectContent></Select>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Status</p>
+                              <Select value={observation.issueStatus} onValueChange={value => updateObservationRow(index, "issueStatus", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Accept">Accept</SelectItem><SelectItem value="Reject">Reject</SelectItem><SelectItem value="Sent Back">Sent Back</SelectItem><SelectItem value="Overdue">Overdue</SelectItem><SelectItem value="Closed">Closed</SelectItem></SelectContent></Select>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Risk Classification</p>
+                            <Input value={observation.riskClassification} onChange={e => updateObservationRow(index, "riskClassification", e.target.value)} />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Department</p>
+                              <Input value={observation.department} onChange={e => updateObservationRow(index, "department", e.target.value)} />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Value at Risk</p>
+                              <Input type="number" min="0" value={observation.valueAtRisk} onChange={e => updateObservationRow(index, "valueAtRisk", e.target.value)} />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
