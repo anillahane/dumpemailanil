@@ -554,7 +554,8 @@ const AuditDetailsPage = () => {
                     <div className="bg-muted/40 px-4 py-3 border-b">
                       <h3 className="text-sm font-semibold">Process-wise Compliance & Scoring</h3>
                     </div>
-                    <div className="overflow-x-auto">
+                    {/* Desktop table */}
+                    <div className="overflow-x-auto hidden sm:block">
                       <table className="w-full text-sm">
                         <thead className="bg-muted/30 text-muted-foreground">
                           <tr>
@@ -579,6 +580,41 @@ const AuditDetailsPage = () => {
                           ))}
                         </tbody>
                       </table>
+                    </div>
+                    {/* Mobile cards */}
+                    <div className="sm:hidden divide-y">
+                      {processRows.map((row, index) => (
+                        <div key={row.process} className="p-4 space-y-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Process</p>
+                            <Input value={row.process} onChange={e => updateProcessRow(index, "process", e.target.value)} />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Checkpoints</p>
+                              <Input type="number" min="0" value={row.checkpoints} onChange={e => updateProcessRow(index, "checkpoints", e.target.value)} />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Compliant</p>
+                              <Input type="number" min="0" value={row.compliant} onChange={e => updateProcessRow(index, "compliant", e.target.value)} />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Non-Compliant</p>
+                              <Input type="number" min="0" value={row.nonCompliant} onChange={e => updateProcessRow(index, "nonCompliant", e.target.value)} />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground mb-1">Score %</p>
+                              <Input type="number" min="0" max="100" value={row.score} onChange={e => updateProcessRow(index, "score", e.target.value)} />
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Owner</p>
+                            <Input value={row.owner} onChange={e => updateProcessRow(index, "owner", e.target.value)} />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
