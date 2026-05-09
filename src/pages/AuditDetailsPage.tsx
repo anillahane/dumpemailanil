@@ -252,6 +252,76 @@ const AuditDetailsPage = () => {
     setRejectDialog({ open: false, index: null, feedback: "" });
   };
 
+  const renderClosureActions = (observation: ObservationRow, index: number) => {
+    const status = observation.issueStatus;
+    const isAuditee = user?.role === "auditee";
+    const isReviewer = user?.role === "auditor" || user?.role === "reviewer";
+    const canEditClosure = isAuditee && (status === "Pending" || status === "Rejected");
+    const canSubmit = canEditClosure && observation.closureComment?.trim() && (observation.closureProof?.length ?? 0) > 0;
+    const showReview = isReviewer && status === "Responded by Auditee";
+    const isClosedOrAccepted = status === "Closed" || status === "Accepted";
+    const inputId = `closure-proof-${index}`;
+    return (
+      <div className="mt-2 space-y-2">
+        {observation.auditorFeedback && status === "Rejected" && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+            <p className="font-medium text-destructive">Auditor feedback</p>
+            <p className="text-muted-foreground">{observation.auditorFeedback}</p>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            id={inputId}
+            type="file"
+            multiple
+            className="hidden"
+            disabled={!canEditClosure}
+            onChange={e => { handleProofUpload(index, e.target.files); e.target.value = ""; }}
+          />
+          <label htmlFor={inputId}>
+            <Button asChild size="sm" variant="outline" disabled={!canEditClosure}>
+              <span className="cursor-pointer"><Upload className="mr-1 h-3 w-3" /> Closure Proof</span>
+            </Button>
+          </label>
+          {canSubmit && (
+            <Button size="sm" onClick={() => submitClosure(index)}>
+              <Send className="mr-1 h-3 w-3" /> Submit Closure
+            </Button>
+          )}
+          {showReview && (
+            <>
+              <Button size="sm" variant="default" onClick={() => acceptClosure(index)}>
+                <CheckCircle className="mr-1 h-3 w-3" /> Accept
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => openRejectDialog(index)}>
+                <XCircle className="mr-1 h-3 w-3" /> Reject
+              </Button>
+            </>
+          )}
+        </div>
+        {(observation.closureProof?.length ?? 0) > 0 && (
+          <ul className="space-y-1">
+            {observation.closureProof.map((file, fi) => (
+              <li key={`${file}-${fi}`} className="flex items-center justify-between rounded-md border bg-muted/30 px-2 py-1 text-xs">
+                <span className="truncate flex items-center gap-1"><FileText className="h-3 w-3" /> {file}</span>
+                {canEditClosure && (
+                  <button type="button" onClick={() => removeProofFile(index, fi)} className="text-destructive hover:underline">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {isClosedOrAccepted && observation.closureDate && (
+          <p className="text-xs text-success">
+            Closed on {new Date(observation.closureDate).toLocaleString()}{observation.acceptedBy ? ` by ${observation.acceptedBy}` : ""}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   const addObservationRow = () => {
     setEditableObservations(prev => [...prev, {
       issueId: generateId("observation"),
