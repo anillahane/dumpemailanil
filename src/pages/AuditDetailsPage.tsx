@@ -366,6 +366,25 @@ const AuditDetailsPage = () => {
   const reportScore = computedScore;
   const reportRating = computeRating(computedScore);
 
+  // Per-process metrics derived from checkpointRows
+  const PROCESS_GROUP_MAP: Record<string, string[]> = {
+    "Sourcing, Underwriting & Disbursement": ["Sourcing", "Assessment", "Underwriting", "Disbursement"],
+    "Collection & Recovery": ["Collection & Recovery"],
+    "In-Branch Audit": ["Branch Operations", "Cash Management", "Compliance & AML", "HR & Statutory", "IT & InfoSec"],
+  };
+  const processMetrics = (process: string) => {
+    const group = PROCESS_GROUP_MAP[process] ?? [process];
+    const rows = checkpointRows.filter(r => group.includes(r.process));
+    const checkpoints = rows.length;
+    const compliant = rows.filter(r => r.result === "Compliant").length;
+    const nonCompliant = rows.filter(r => r.result === "Non-Compliant").length;
+    const observation = rows.filter(r => r.result === "Observation").length;
+    const scored = compliant + nonCompliant + observation;
+    const earned = compliant + observation * 0.5;
+    const score = scored > 0 ? Math.round((earned / scored) * 1000) / 10 : 0;
+    return { checkpoints, compliant, nonCompliant, score };
+  };
+
   // Validations
   const mandatoryPending = checkpointRows.filter(r => r.mandatory && r.result === "Pending").length;
   const ncWithoutOwner = checkpointRows.filter(r => r.result === "Non-Compliant" && (!r.owner || !r.targetDate)).length;
@@ -742,7 +761,9 @@ const AuditDetailsPage = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y">
-                          {processRows.map((row, index) => (
+                          {processRows.map((row, index) => {
+                            const m = processMetrics(row.process);
+                            return (
                             <tr key={row.process}>
                               <td className="px-4 py-3 min-w-64">
                                 <Select value={row.process} onValueChange={v => updateProcessRow(index, "process", v)}>
@@ -750,19 +771,22 @@ const AuditDetailsPage = () => {
                                   <SelectContent>{PROCESS_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                                 </Select>
                               </td>
-                              <td className="px-4 py-3 min-w-28"><Input type="number" min="0" value={row.checkpoints} onChange={e => updateProcessRow(index, "checkpoints", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-28"><Input type="number" min="0" value={row.compliant} onChange={e => updateProcessRow(index, "compliant", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-32"><Input type="number" min="0" value={row.nonCompliant} onChange={e => updateProcessRow(index, "nonCompliant", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-28"><Input type="number" min="0" max="100" value={row.score} onChange={e => updateProcessRow(index, "score", e.target.value)} /></td>
+                              <td className="px-4 py-3 min-w-28 font-medium">{m.checkpoints}</td>
+                              <td className="px-4 py-3 min-w-28 text-success font-medium">{m.compliant}</td>
+                              <td className="px-4 py-3 min-w-32 text-destructive font-medium">{m.nonCompliant}</td>
+                              <td className="px-4 py-3 min-w-28 font-semibold">{m.score}%</td>
                               <td className="px-4 py-3 min-w-40"><Input value={row.owner} onChange={e => updateProcessRow(index, "owner", e.target.value)} /></td>
                             </tr>
-                          ))}
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
                     {/* Mobile cards */}
                     <div className="sm:hidden divide-y">
-                      {processRows.map((row, index) => (
+                      {processRows.map((row, index) => {
+                        const m = processMetrics(row.process);
+                        return (
                         <div key={row.process} className="p-4 space-y-3">
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Process</p>
@@ -774,21 +798,21 @@ const AuditDetailsPage = () => {
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Checkpoints</p>
-                              <Input type="number" min="0" value={row.checkpoints} onChange={e => updateProcessRow(index, "checkpoints", e.target.value)} />
+                              <p className="text-sm font-medium">{m.checkpoints}</p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Compliant</p>
-                              <Input type="number" min="0" value={row.compliant} onChange={e => updateProcessRow(index, "compliant", e.target.value)} />
+                              <p className="text-sm font-medium text-success">{m.compliant}</p>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Non-Compliant</p>
-                              <Input type="number" min="0" value={row.nonCompliant} onChange={e => updateProcessRow(index, "nonCompliant", e.target.value)} />
+                              <p className="text-sm font-medium text-destructive">{m.nonCompliant}</p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Score %</p>
-                              <Input type="number" min="0" max="100" value={row.score} onChange={e => updateProcessRow(index, "score", e.target.value)} />
+                              <p className="text-sm font-semibold">{m.score}%</p>
                             </div>
                           </div>
                           <div>
@@ -796,7 +820,8 @@ const AuditDetailsPage = () => {
                             <Input value={row.owner} onChange={e => updateProcessRow(index, "owner", e.target.value)} />
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
