@@ -772,14 +772,9 @@ const AuditDetailsPage = () => {
                             </tr>
                             );
                           })}
-                              </td>
-                              <td className="px-4 py-3 min-w-28"><Input type="number" min="0" value={row.checkpoints} onChange={e => updateProcessRow(index, "checkpoints", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-28"><Input type="number" min="0" value={row.compliant} onChange={e => updateProcessRow(index, "compliant", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-32"><Input type="number" min="0" value={row.nonCompliant} onChange={e => updateProcessRow(index, "nonCompliant", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-28"><Input type="number" min="0" max="100" value={row.score} onChange={e => updateProcessRow(index, "score", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-40"><Input value={row.owner} onChange={e => updateProcessRow(index, "owner", e.target.value)} /></td>
-                            </tr>
-                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                         </tbody>
                       </table>
                     </div>
