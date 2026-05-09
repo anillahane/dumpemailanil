@@ -25,6 +25,7 @@ const AuditDetailsPage = () => {
   const audit = MOCK_AUDITS.find(a => a.auditId === auditId);
   const [remarks, setRemarks] = useState("");
   const [activeTab, setActiveTab] = useState<"report" | "info" | "history">("info");
+  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; index: number | null; feedback: string }>({ open: false, index: null, feedback: "" });
   const [reportData, setReportData] = useState({
     reportNo: `RPT-${auditId ?? "DRAFT"}`,
     branchManager: "Ramesh Kumar",
