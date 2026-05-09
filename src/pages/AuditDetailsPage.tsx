@@ -775,9 +775,6 @@ const AuditDetailsPage = () => {
                         </tbody>
                       </table>
                     </div>
-                        </tbody>
-                      </table>
-                    </div>
                     {/* Mobile cards */}
                     <div className="sm:hidden divide-y">
                       {processRows.map((row, index) => (
