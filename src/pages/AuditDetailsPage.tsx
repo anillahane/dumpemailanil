@@ -367,13 +367,20 @@ const AuditDetailsPage = () => {
   const reportRating = computeRating(computedScore);
 
   // Per-process metrics derived from checkpointRows
+  const PROCESS_GROUP_MAP: Record<string, string[]> = {
+    "Sourcing, Underwriting & Disbursement": ["Sourcing", "Assessment", "Underwriting", "Disbursement"],
+    "Collection & Recovery": ["Collection & Recovery"],
+    "In-Branch Audit": ["Branch Operations", "Cash Management", "Compliance & AML", "HR & Statutory", "IT & InfoSec"],
+  };
   const processMetrics = (process: string) => {
-    const rows = checkpointRows.filter(r => r.process === process);
+    const group = PROCESS_GROUP_MAP[process] ?? [process];
+    const rows = checkpointRows.filter(r => group.includes(r.process));
     const checkpoints = rows.length;
     const compliant = rows.filter(r => r.result === "Compliant").length;
     const nonCompliant = rows.filter(r => r.result === "Non-Compliant").length;
-    const scored = compliant + nonCompliant + rows.filter(r => r.result === "Observation").length;
-    const earned = compliant + rows.filter(r => r.result === "Observation").length * 0.5;
+    const observation = rows.filter(r => r.result === "Observation").length;
+    const scored = compliant + nonCompliant + observation;
+    const earned = compliant + observation * 0.5;
     const score = scored > 0 ? Math.round((earned / scored) * 1000) / 10 : 0;
     return { checkpoints, compliant, nonCompliant, score };
   };
