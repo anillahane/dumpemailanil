@@ -1309,6 +1309,24 @@ const AuditDetailsPage = () => {
           )}
         </div>
       </div>
+      <Dialog open={rejectDialog.open} onOpenChange={open => setRejectDialog(s => ({ ...s, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Closure</DialogTitle>
+            <DialogDescription>Provide feedback for the auditee. The observation will be reopened for re-submission.</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={4}
+            placeholder="Explain why the closure is rejected..."
+            value={rejectDialog.feedback}
+            onChange={e => setRejectDialog(s => ({ ...s, feedback: e.target.value }))}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialog({ open: false, index: null, feedback: "" })}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmReject}>Confirm Reject</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
