@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +25,7 @@ const AuditDetailsPage = () => {
   const audit = MOCK_AUDITS.find(a => a.auditId === auditId);
   const [remarks, setRemarks] = useState("");
   const [activeTab, setActiveTab] = useState<"report" | "info" | "history">("info");
+  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; index: number | null; feedback: string }>({ open: false, index: null, feedback: "" });
   const [reportData, setReportData] = useState({
     reportNo: `RPT-${auditId ?? "DRAFT"}`,
     branchManager: "Ramesh Kumar",
@@ -170,6 +172,154 @@ const AuditDetailsPage = () => {
 
   const updateObservationRow = (index: number, field: keyof (typeof editableObservations)[number], value: string) => {
     setEditableObservations(prev => prev.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value.slice(0, 500) } : row));
+  };
+
+  type ObservationRow = (typeof editableObservations)[number];
+  const patchObservationRow = (index: number, patch: Partial<ObservationRow>) => {
+    setEditableObservations(prev => prev.map((row, i) => i === index ? { ...row, ...patch } : row));
+  };
+
+  const appendStatusHistory = (row: ObservationRow, status: string, comment?: string) => {
+    return [
+      ...(row.statusHistory ?? []),
+      { status, timestamp: new Date().toISOString(), user: user ? `${user.name} (${user.empId})` : "Unknown", comment },
+    ];
+  };
+
+  const handleProofUpload = (index: number, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const names = Array.from(files).map(f => f.name);
+    setEditableObservations(prev => prev.map((row, i) => i === index ? { ...row, closureProof: [...(row.closureProof ?? []), ...names] } : row));
+    toast({ title: "Proof attached", description: `${names.length} file(s) attached.` });
+  };
+
+  const removeProofFile = (index: number, fileIdx: number) => {
+    setEditableObservations(prev => prev.map((row, i) => i === index ? { ...row, closureProof: (row.closureProof ?? []).filter((_, fi) => fi !== fileIdx) } : row));
+  };
+
+  const submitClosure = (index: number) => {
+    const row = editableObservations[index];
+    if (!row) return;
+    if (!row.closureComment?.trim() || (row.closureProof ?? []).length === 0) {
+      toast({ title: "Cannot submit", description: "Closure comment and at least one proof file are required.", variant: "destructive" });
+      return;
+    }
+    const now = new Date().toISOString();
+    patchObservationRow(index, {
+      issueStatus: "Responded by Auditee",
+      closureDate: now,
+      statusHistory: appendStatusHistory(row, "Responded by Auditee", row.closureComment),
+    });
+    toast({ title: "Closure submitted", description: `Issue ${row.issueId} sent to auditor for review.` });
+  };
+
+  const acceptClosure = (index: number) => {
+    const row = editableObservations[index];
+    if (!row) return;
+    const now = new Date().toISOString();
+    const acceptedBy = user ? `${user.name} (${user.empId})` : "Auditor";
+    let history = appendStatusHistory(row, "Accepted");
+    history = [...history, { status: "Closed", timestamp: now, user: acceptedBy }];
+    patchObservationRow(index, {
+      issueStatus: "Closed",
+      acceptedBy,
+      acceptedAt: now,
+      closureDate: now,
+      statusHistory: history,
+    });
+    toast({ title: "Closure accepted", description: `Issue ${row.issueId} marked as Closed.` });
+  };
+
+  const openRejectDialog = (index: number) => setRejectDialog({ open: true, index, feedback: "" });
+
+  const confirmReject = () => {
+    if (rejectDialog.index === null) return;
+    const idx = rejectDialog.index;
+    const row = editableObservations[idx];
+    if (!row) return;
+    if (!rejectDialog.feedback.trim()) {
+      toast({ title: "Feedback required", description: "Please provide rejection feedback.", variant: "destructive" });
+      return;
+    }
+    patchObservationRow(idx, {
+      issueStatus: "Rejected",
+      auditorFeedback: rejectDialog.feedback,
+      reopenedAt: new Date().toISOString(),
+      reopenCount: (row.reopenCount ?? 0) + 1,
+      statusHistory: appendStatusHistory(row, "Rejected", rejectDialog.feedback),
+    });
+    toast({ title: "Closure rejected", description: `Issue ${row.issueId} sent back to auditee.` });
+    setRejectDialog({ open: false, index: null, feedback: "" });
+  };
+
+  const renderClosureActions = (observation: ObservationRow, index: number) => {
+    const status = observation.issueStatus;
+    const isAuditee = user?.role === "auditee";
+    const isReviewer = user?.role === "auditor" || user?.role === "reviewer";
+    const canEditClosure = isAuditee && (status === "Pending" || status === "Rejected");
+    const canSubmit = canEditClosure && observation.closureComment?.trim() && (observation.closureProof?.length ?? 0) > 0;
+    const showReview = isReviewer && status === "Responded by Auditee";
+    const isClosedOrAccepted = status === "Closed" || status === "Accepted";
+    const inputId = `closure-proof-${index}`;
+    return (
+      <div className="mt-2 space-y-2">
+        {observation.auditorFeedback && status === "Rejected" && (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs">
+            <p className="font-medium text-destructive">Auditor feedback</p>
+            <p className="text-muted-foreground">{observation.auditorFeedback}</p>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            id={inputId}
+            type="file"
+            multiple
+            className="hidden"
+            disabled={!canEditClosure}
+            onChange={e => { handleProofUpload(index, e.target.files); e.target.value = ""; }}
+          />
+          <label htmlFor={inputId}>
+            <Button asChild size="sm" variant="outline" disabled={!canEditClosure}>
+              <span className="cursor-pointer"><Upload className="mr-1 h-3 w-3" /> Closure Proof</span>
+            </Button>
+          </label>
+          {canSubmit && (
+            <Button size="sm" onClick={() => submitClosure(index)}>
+              <Send className="mr-1 h-3 w-3" /> Submit Closure
+            </Button>
+          )}
+          {showReview && (
+            <>
+              <Button size="sm" variant="default" onClick={() => acceptClosure(index)}>
+                <CheckCircle className="mr-1 h-3 w-3" /> Accept
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => openRejectDialog(index)}>
+                <XCircle className="mr-1 h-3 w-3" /> Reject
+              </Button>
+            </>
+          )}
+        </div>
+        {(observation.closureProof?.length ?? 0) > 0 && (
+          <ul className="space-y-1">
+            {observation.closureProof.map((file, fi) => (
+              <li key={`${file}-${fi}`} className="flex items-center justify-between rounded-md border bg-muted/30 px-2 py-1 text-xs">
+                <span className="truncate flex items-center gap-1"><FileText className="h-3 w-3" /> {file}</span>
+                {canEditClosure && (
+                  <button type="button" onClick={() => removeProofFile(index, fi)} className="text-destructive hover:underline">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {isClosedOrAccepted && observation.closureDate && (
+          <p className="text-xs text-success">
+            Closed on {new Date(observation.closureDate).toLocaleString()}{observation.acceptedBy ? ` by ${observation.acceptedBy}` : ""}
+          </p>
+        )}
+      </div>
+    );
   };
 
   const addObservationRow = () => {
@@ -965,15 +1115,16 @@ const AuditDetailsPage = () => {
                               </td>
                               <td className="px-4 py-3 min-w-36"><Input type="number" min="0" value={observation.valueAtRisk} onChange={e => updateObservationRow(index, "valueAtRisk", e.target.value)} /></td>
                               <td className="px-4 py-3 min-w-36"><Select value={observation.issueStatus} onValueChange={value => updateObservationRow(index, "issueStatus", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{OBSERVATION_STATUSES.map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select></td>
-                              <td className="px-4 py-3 min-w-72">
+                              <td className="px-4 py-3 min-w-80 align-top">
                                 <Textarea
                                   rows={2}
-                                  placeholder={user?.role === "auditee" ? "Enter closure comment for auditor review..." : "Auditee to provide closure comment"}
-                                  disabled={user?.role !== "auditee" && user?.role !== "admin"}
+                                  placeholder={user?.role === "auditee" ? (observation.issueStatus === "Pending" || observation.issueStatus === "Rejected" ? "Enter closure comment for auditor review..." : "Closure already submitted") : "Auditee to provide closure comment"}
+                                  disabled={user?.role !== "auditee" || (observation.issueStatus !== "Pending" && observation.issueStatus !== "Rejected")}
                                   value={observation.closureComment}
                                   onChange={e => updateObservationRow(index, "closureComment", e.target.value)}
                                   className={observation.closureComment ? "border-success/40 bg-success/5" : ""}
                                 />
+                                {renderClosureActions(observation, index)}
                               </td>
                             </tr>
                           ))}
@@ -1035,12 +1186,13 @@ const AuditDetailsPage = () => {
                             <p className="text-xs text-muted-foreground mb-1">Closure Comment (Auditee)</p>
                             <Textarea
                               rows={2}
-                              placeholder={user?.role === "auditee" ? "Enter closure comment..." : "Auditee to provide closure comment"}
-                              disabled={user?.role !== "auditee" && user?.role !== "admin"}
+                              placeholder={user?.role === "auditee" ? (observation.issueStatus === "Pending" || observation.issueStatus === "Rejected" ? "Enter closure comment..." : "Closure already submitted") : "Auditee to provide closure comment"}
+                              disabled={user?.role !== "auditee" || (observation.issueStatus !== "Pending" && observation.issueStatus !== "Rejected")}
                               value={observation.closureComment}
                               onChange={e => updateObservationRow(index, "closureComment", e.target.value)}
                               className={observation.closureComment ? "border-success/40 bg-success/5" : ""}
                             />
+                            {renderClosureActions(observation, index)}
                           </div>
                         </div>
                       ))}
@@ -1157,6 +1309,24 @@ const AuditDetailsPage = () => {
           )}
         </div>
       </div>
+      <Dialog open={rejectDialog.open} onOpenChange={open => setRejectDialog(s => ({ ...s, open }))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Closure</DialogTitle>
+            <DialogDescription>Provide feedback for the auditee. The observation will be reopened for re-submission.</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            rows={4}
+            placeholder="Explain why the closure is rejected..."
+            value={rejectDialog.feedback}
+            onChange={e => setRejectDialog(s => ({ ...s, feedback: e.target.value }))}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialog({ open: false, index: null, feedback: "" })}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmReject}>Confirm Reject</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
