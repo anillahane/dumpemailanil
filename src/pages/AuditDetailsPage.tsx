@@ -174,6 +174,84 @@ const AuditDetailsPage = () => {
     setEditableObservations(prev => prev.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value.slice(0, 500) } : row));
   };
 
+  type ObservationRow = (typeof editableObservations)[number];
+  const patchObservationRow = (index: number, patch: Partial<ObservationRow>) => {
+    setEditableObservations(prev => prev.map((row, i) => i === index ? { ...row, ...patch } : row));
+  };
+
+  const appendStatusHistory = (row: ObservationRow, status: string, comment?: string) => {
+    return [
+      ...(row.statusHistory ?? []),
+      { status, timestamp: new Date().toISOString(), user: user ? `${user.name} (${user.empId})` : "Unknown", comment },
+    ];
+  };
+
+  const handleProofUpload = (index: number, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const names = Array.from(files).map(f => f.name);
+    setEditableObservations(prev => prev.map((row, i) => i === index ? { ...row, closureProof: [...(row.closureProof ?? []), ...names] } : row));
+    toast({ title: "Proof attached", description: `${names.length} file(s) attached.` });
+  };
+
+  const removeProofFile = (index: number, fileIdx: number) => {
+    setEditableObservations(prev => prev.map((row, i) => i === index ? { ...row, closureProof: (row.closureProof ?? []).filter((_, fi) => fi !== fileIdx) } : row));
+  };
+
+  const submitClosure = (index: number) => {
+    const row = editableObservations[index];
+    if (!row) return;
+    if (!row.closureComment?.trim() || (row.closureProof ?? []).length === 0) {
+      toast({ title: "Cannot submit", description: "Closure comment and at least one proof file are required.", variant: "destructive" });
+      return;
+    }
+    const now = new Date().toISOString();
+    patchObservationRow(index, {
+      issueStatus: "Responded by Auditee",
+      closureDate: now,
+      statusHistory: appendStatusHistory(row, "Responded by Auditee", row.closureComment),
+    });
+    toast({ title: "Closure submitted", description: `Issue ${row.issueId} sent to auditor for review.` });
+  };
+
+  const acceptClosure = (index: number) => {
+    const row = editableObservations[index];
+    if (!row) return;
+    const now = new Date().toISOString();
+    const acceptedBy = user ? `${user.name} (${user.empId})` : "Auditor";
+    let history = appendStatusHistory(row, "Accepted");
+    history = [...history, { status: "Closed", timestamp: now, user: acceptedBy }];
+    patchObservationRow(index, {
+      issueStatus: "Closed",
+      acceptedBy,
+      acceptedAt: now,
+      closureDate: now,
+      statusHistory: history,
+    });
+    toast({ title: "Closure accepted", description: `Issue ${row.issueId} marked as Closed.` });
+  };
+
+  const openRejectDialog = (index: number) => setRejectDialog({ open: true, index, feedback: "" });
+
+  const confirmReject = () => {
+    if (rejectDialog.index === null) return;
+    const idx = rejectDialog.index;
+    const row = editableObservations[idx];
+    if (!row) return;
+    if (!rejectDialog.feedback.trim()) {
+      toast({ title: "Feedback required", description: "Please provide rejection feedback.", variant: "destructive" });
+      return;
+    }
+    patchObservationRow(idx, {
+      issueStatus: "Rejected",
+      auditorFeedback: rejectDialog.feedback,
+      reopenedAt: new Date().toISOString(),
+      reopenCount: (row.reopenCount ?? 0) + 1,
+      statusHistory: appendStatusHistory(row, "Rejected", rejectDialog.feedback),
+    });
+    toast({ title: "Closure rejected", description: `Issue ${row.issueId} sent back to auditee.` });
+    setRejectDialog({ open: false, index: null, feedback: "" });
+  };
+
   const addObservationRow = () => {
     setEditableObservations(prev => [...prev, {
       issueId: generateId("observation"),
