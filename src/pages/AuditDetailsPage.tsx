@@ -1186,12 +1186,13 @@ const AuditDetailsPage = () => {
                             <p className="text-xs text-muted-foreground mb-1">Closure Comment (Auditee)</p>
                             <Textarea
                               rows={2}
-                              placeholder={user?.role === "auditee" ? "Enter closure comment..." : "Auditee to provide closure comment"}
-                              disabled={user?.role !== "auditee" && user?.role !== "admin"}
+                              placeholder={user?.role === "auditee" ? (observation.issueStatus === "Pending" || observation.issueStatus === "Rejected" ? "Enter closure comment..." : "Closure already submitted") : "Auditee to provide closure comment"}
+                              disabled={user?.role !== "auditee" || (observation.issueStatus !== "Pending" && observation.issueStatus !== "Rejected")}
                               value={observation.closureComment}
                               onChange={e => updateObservationRow(index, "closureComment", e.target.value)}
                               className={observation.closureComment ? "border-success/40 bg-success/5" : ""}
                             />
+                            {renderClosureActions(observation, index)}
                           </div>
                         </div>
                       ))}
