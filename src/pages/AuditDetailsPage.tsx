@@ -1115,15 +1115,16 @@ const AuditDetailsPage = () => {
                               </td>
                               <td className="px-4 py-3 min-w-36"><Input type="number" min="0" value={observation.valueAtRisk} onChange={e => updateObservationRow(index, "valueAtRisk", e.target.value)} /></td>
                               <td className="px-4 py-3 min-w-36"><Select value={observation.issueStatus} onValueChange={value => updateObservationRow(index, "issueStatus", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{OBSERVATION_STATUSES.map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select></td>
-                              <td className="px-4 py-3 min-w-72">
+                              <td className="px-4 py-3 min-w-80 align-top">
                                 <Textarea
                                   rows={2}
-                                  placeholder={user?.role === "auditee" ? "Enter closure comment for auditor review..." : "Auditee to provide closure comment"}
-                                  disabled={user?.role !== "auditee" && user?.role !== "admin"}
+                                  placeholder={user?.role === "auditee" ? (observation.issueStatus === "Pending" || observation.issueStatus === "Rejected" ? "Enter closure comment for auditor review..." : "Closure already submitted") : "Auditee to provide closure comment"}
+                                  disabled={user?.role !== "auditee" || (observation.issueStatus !== "Pending" && observation.issueStatus !== "Rejected")}
                                   value={observation.closureComment}
                                   onChange={e => updateObservationRow(index, "closureComment", e.target.value)}
                                   className={observation.closureComment ? "border-success/40 bg-success/5" : ""}
                                 />
+                                {renderClosureActions(observation, index)}
                               </td>
                             </tr>
                           ))}
