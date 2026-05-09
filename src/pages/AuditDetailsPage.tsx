@@ -366,6 +366,18 @@ const AuditDetailsPage = () => {
   const reportScore = computedScore;
   const reportRating = computeRating(computedScore);
 
+  // Per-process metrics derived from checkpointRows
+  const processMetrics = (process: string) => {
+    const rows = checkpointRows.filter(r => r.process === process);
+    const checkpoints = rows.length;
+    const compliant = rows.filter(r => r.result === "Compliant").length;
+    const nonCompliant = rows.filter(r => r.result === "Non-Compliant").length;
+    const scored = compliant + nonCompliant + rows.filter(r => r.result === "Observation").length;
+    const earned = compliant + rows.filter(r => r.result === "Observation").length * 0.5;
+    const score = scored > 0 ? Math.round((earned / scored) * 1000) / 10 : 0;
+    return { checkpoints, compliant, nonCompliant, score };
+  };
+
   // Validations
   const mandatoryPending = checkpointRows.filter(r => r.mandatory && r.result === "Pending").length;
   const ncWithoutOwner = checkpointRows.filter(r => r.result === "Non-Compliant" && (!r.owner || !r.targetDate)).length;
