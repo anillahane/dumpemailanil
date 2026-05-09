@@ -754,13 +754,24 @@ const AuditDetailsPage = () => {
                           </tr>
                         </thead>
                         <tbody className="divide-y">
-                          {processRows.map((row, index) => (
+                          {processRows.map((row, index) => {
+                            const m = processMetrics(row.process);
+                            return (
                             <tr key={row.process}>
                               <td className="px-4 py-3 min-w-64">
                                 <Select value={row.process} onValueChange={v => updateProcessRow(index, "process", v)}>
                                   <SelectTrigger><SelectValue placeholder="Select process" /></SelectTrigger>
                                   <SelectContent>{PROCESS_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
                                 </Select>
+                              </td>
+                              <td className="px-4 py-3 min-w-28 font-medium">{m.checkpoints}</td>
+                              <td className="px-4 py-3 min-w-28 text-success font-medium">{m.compliant}</td>
+                              <td className="px-4 py-3 min-w-32 text-destructive font-medium">{m.nonCompliant}</td>
+                              <td className="px-4 py-3 min-w-28 font-semibold">{m.score}%</td>
+                              <td className="px-4 py-3 min-w-40"><Input value={row.owner} onChange={e => updateProcessRow(index, "owner", e.target.value)} /></td>
+                            </tr>
+                            );
+                          })}
                               </td>
                               <td className="px-4 py-3 min-w-28"><Input type="number" min="0" value={row.checkpoints} onChange={e => updateProcessRow(index, "checkpoints", e.target.value)} /></td>
                               <td className="px-4 py-3 min-w-28"><Input type="number" min="0" value={row.compliant} onChange={e => updateProcessRow(index, "compliant", e.target.value)} /></td>
