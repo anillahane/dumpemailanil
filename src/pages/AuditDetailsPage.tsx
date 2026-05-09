@@ -777,7 +777,9 @@ const AuditDetailsPage = () => {
                     </div>
                     {/* Mobile cards */}
                     <div className="sm:hidden divide-y">
-                      {processRows.map((row, index) => (
+                      {processRows.map((row, index) => {
+                        const m = processMetrics(row.process);
+                        return (
                         <div key={row.process} className="p-4 space-y-3">
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Process</p>
@@ -789,21 +791,21 @@ const AuditDetailsPage = () => {
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Checkpoints</p>
-                              <Input type="number" min="0" value={row.checkpoints} onChange={e => updateProcessRow(index, "checkpoints", e.target.value)} />
+                              <p className="text-sm font-medium">{m.checkpoints}</p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Compliant</p>
-                              <Input type="number" min="0" value={row.compliant} onChange={e => updateProcessRow(index, "compliant", e.target.value)} />
+                              <p className="text-sm font-medium text-success">{m.compliant}</p>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Non-Compliant</p>
-                              <Input type="number" min="0" value={row.nonCompliant} onChange={e => updateProcessRow(index, "nonCompliant", e.target.value)} />
+                              <p className="text-sm font-medium text-destructive">{m.nonCompliant}</p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Score %</p>
-                              <Input type="number" min="0" max="100" value={row.score} onChange={e => updateProcessRow(index, "score", e.target.value)} />
+                              <p className="text-sm font-semibold">{m.score}%</p>
                             </div>
                           </div>
                           <div>
@@ -811,7 +813,8 @@ const AuditDetailsPage = () => {
                             <Input value={row.owner} onChange={e => updateProcessRow(index, "owner", e.target.value)} />
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
