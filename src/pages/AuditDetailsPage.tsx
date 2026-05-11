@@ -518,7 +518,7 @@ const AuditDetailsPage = () => {
   };
 
   // Auto-derived per-process summary table (replaces previously editable processRows)
-  const processSummary = useMemo(() => {
+  const processSummary = (() => {
     return Object.keys(PROCESS_GROUP_MAP).map(process => {
       const group = PROCESS_GROUP_MAP[process];
       const rows = checkpointRows.filter(r => group.includes(r.process));
