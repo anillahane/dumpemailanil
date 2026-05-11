@@ -100,7 +100,31 @@ const AuditDetailsPage = () => {
           setReportData(defaultReportData(auditId, row.auditScore, row.auditRating));
         }
         if (Array.isArray(row.checkpoints) && row.checkpoints.length > 0) {
-          setCheckpointRows(row.checkpoints as never);
+          // Auto-map master fields from BRD library; preserve auditor-entered values from persisted row.
+          const persisted = row.checkpoints as Array<Record<string, unknown>>;
+          const merged = BRD_CHECKPOINTS.map(cp => {
+            const saved = persisted.find(p => p.checkpointCode === cp.checkpointCode) ?? {};
+            return {
+              process: cp.process,
+              checkpointCode: cp.checkpointCode,
+              checkpoint: cp.checkpoint,
+              expectedControl: cp.expectedControl,
+              sampleSize: String(cp.defaultSampleSize),
+              evidence: cp.defaultEvidence,
+              severity: cp.defaultSeverity as string,
+              weight: cp.weight,
+              mandatory: cp.mandatory,
+              accountRef: (saved.accountRef as string) ?? "",
+              evidenceFiles: (saved.evidenceFiles as { name: string; size: number }[]) ?? [],
+              result: (saved.result as never) ?? "Pending",
+              exceptionValue: (saved.exceptionValue as string) ?? "0",
+              owner: (saved.owner as string) ?? "",
+              targetDate: (saved.targetDate as string) ?? "",
+              remarks: (saved.remarks as string) ?? "",
+              reviewerComment: (saved.reviewerComment as string) ?? "",
+            };
+          });
+          setCheckpointRows(merged as never);
         }
         if (row.workflowStage) {
           setWorkflowStage(row.workflowStage);
