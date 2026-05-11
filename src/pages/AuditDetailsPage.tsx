@@ -1077,47 +1077,37 @@ const AuditDetailsPage = () => {
                       {checkpointRows.map((row, index) => (
                         <div key={`${row.checkpointCode}-${index}`} className={`p-4 space-y-3 ${row.mandatory && row.result === "Pending" ? "bg-destructive/5" : ""}`}>
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex-1">
-                              <p className="text-xs text-muted-foreground mb-1">Checkpoint ID</p>
-                              <div className="flex items-center gap-1">
-                                <Input readOnly value={row.checkpointCode} className="font-mono bg-muted/40" title="Auto-generated. Format managed in Admin → ID Settings." />
-                                {row.mandatory && <Badge variant="destructive" className="text-[10px] px-1 shrink-0">M</Badge>}
-                              </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs px-2 py-1 rounded bg-muted/40">{row.checkpointCode}</span>
+                              {row.mandatory && <Badge variant="destructive" className="text-[10px] px-1 shrink-0">M</Badge>}
+                              <Badge variant="outline" className="text-[10px]">{row.severity}</Badge>
                             </div>
-                            <Button variant="ghost" size="icon" disabled={reportLocked || row.mandatory} onClick={() => removeCheckpointRow(index)}><Trash2 size={14} /></Button>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Process</p>
-                            <Select disabled={reportLocked} value={row.process} onValueChange={v => updateCheckpointRow(index, "process", v)}>
-                              <SelectTrigger><SelectValue placeholder="Select process" /></SelectTrigger>
-                              <SelectContent>{PROCESS_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Account / Ref</p>
-                            <Input disabled={reportLocked} value={row.accountRef} onChange={e => updateCheckpointRow(index, "accountRef", e.target.value)} />
+                            <p className="text-sm">{row.process}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Checkpoint</p>
-                            <Textarea disabled={reportLocked} value={row.checkpoint} rows={2} onChange={e => updateCheckpointRow(index, "checkpoint", e.target.value)} />
+                            <p className="text-sm whitespace-pre-wrap">{row.checkpoint}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Expected Control</p>
-                            <Textarea disabled={reportLocked} value={row.expectedControl} rows={2} onChange={e => updateCheckpointRow(index, "expectedControl", e.target.value)} />
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{row.expectedControl}</p>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <p className="text-xs text-muted-foreground mb-1">Sample Size</p>
-                              <Input disabled={reportLocked} type="number" min="0" value={row.sampleSize} onChange={e => updateCheckpointRow(index, "sampleSize", e.target.value)} />
+                              <p className="text-sm">{row.sampleSize}</p>
                             </div>
                             <div>
-                              <p className="text-xs text-muted-foreground mb-1">Exception Value</p>
-                              <Input disabled={reportLocked} type="number" min="0" value={row.exceptionValue} onChange={e => updateCheckpointRow(index, "exceptionValue", e.target.value)} />
+                              <p className="text-xs text-muted-foreground mb-1">Evidence Type</p>
+                              <p className="text-sm">{row.evidence}</p>
                             </div>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground mb-1">Evidence Type</p>
-                            <Input disabled={reportLocked} value={row.evidence} onChange={e => updateCheckpointRow(index, "evidence", e.target.value)} />
+                            <p className="text-xs text-muted-foreground mb-1">Account / Ref</p>
+                            <Input disabled={reportLocked} value={row.accountRef} onChange={e => updateCheckpointRow(index, "accountRef", e.target.value)} />
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Evidence Files</p>
@@ -1140,8 +1130,8 @@ const AuditDetailsPage = () => {
                               <Select disabled={reportLocked} value={row.result} onValueChange={value => updateCheckpointRow(index, "result", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Compliant">Compliant</SelectItem><SelectItem value="Non-Compliant">Non-Compliant</SelectItem><SelectItem value="Observation">Observation</SelectItem><SelectItem value="Not Applicable">Not Applicable</SelectItem></SelectContent></Select>
                             </div>
                             <div>
-                              <p className="text-xs text-muted-foreground mb-1">Severity</p>
-                              <Select disabled={reportLocked} value={row.severity} onValueChange={value => updateCheckpointRow(index, "severity", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem><SelectItem value="Critical">Critical</SelectItem></SelectContent></Select>
+                              <p className="text-xs text-muted-foreground mb-1">Exception Value</p>
+                              <Input disabled={reportLocked} type="number" min="0" value={row.exceptionValue} onChange={e => updateCheckpointRow(index, "exceptionValue", e.target.value)} />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-3">
@@ -1155,8 +1145,8 @@ const AuditDetailsPage = () => {
                             </div>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground mb-1">Auditor Remarks</p>
-                            <Textarea disabled={reportLocked} value={row.remarks} rows={2} onChange={e => updateCheckpointRow(index, "remarks", e.target.value)} />
+                            <p className="text-xs text-muted-foreground mb-1">Auditor Observation</p>
+                            <Textarea disabled={reportLocked} value={row.remarks} rows={2} placeholder="Record observation..." onChange={e => updateCheckpointRow(index, "remarks", e.target.value)} />
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground mb-1">Reviewer Comment</p>
