@@ -103,7 +103,7 @@ const AppSidebar = ({ onClose }: AppSidebarProps) => {
             <button
               key={link.path}
               onClick={() => handleNavigate(link.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm mb-0.5 transition-all duration-150 ${
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm mb-0.5 text-left transition-all duration-150 ${
                 isActive
                   ? "bg-sidebar-accent text-sidebar-primary-foreground font-medium shadow-sm"
                   : "text-sidebar-foreground hover:bg-sidebar-accent/50"
