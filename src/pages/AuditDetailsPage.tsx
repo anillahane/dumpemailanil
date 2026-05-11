@@ -543,7 +543,7 @@ const AuditDetailsPage = () => {
       }
       return { process, checkpoints, compliant, nonCompliant, score, owner };
     });
-  }, [checkpointRows]);
+  })();
 
   // Validations
   const mandatoryPending = checkpointRows.filter(r => r.mandatory && r.result === "Pending").length;
