@@ -994,9 +994,9 @@ const AuditDetailsPage = () => {
                     <div className="flex flex-col gap-3 bg-muted/40 px-4 py-3 border-b sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <h3 className="text-sm font-semibold">Detailed Audit Checklist - Individual Checkpoints <span className="ml-2 text-xs font-normal text-muted-foreground">(Data Entry)</span></h3>
-                        <p className="text-xs text-muted-foreground">Editable checkpoint-level testing format covering process, control, sample, result, severity and remarks.</p>
+                        <p className="text-xs text-muted-foreground">Checklist items are auto-populated from the master library. Auditor only records the observation, result and supporting evidence.</p>
                       </div>
-                      <Button variant="outline" size="sm" onClick={addCheckpointRow}><Plus size={15} /> Add Checkpoint</Button>
+                      <Badge variant="outline" className="text-[11px]">Master-driven · {checkpointRows.length} checkpoints</Badge>
                     </div>
                     {/* Desktop table */}
                     <div className="overflow-x-auto hidden sm:block">
@@ -1016,31 +1016,27 @@ const AuditDetailsPage = () => {
                             <th className="px-4 py-3 text-left font-medium">Exception Value</th>
                             <th className="px-4 py-3 text-left font-medium">Owner</th>
                             <th className="px-4 py-3 text-left font-medium">Target Date</th>
-                            <th className="px-4 py-3 text-left font-medium">Auditor Remarks</th>
+                            <th className="px-4 py-3 text-left font-medium">Auditor Observation</th>
                             <th className="px-4 py-3 text-left font-medium">Reviewer Comment</th>
-                            <th className="px-4 py-3 text-left font-medium"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y">
                           {checkpointRows.map((row, index) => (
                             <tr key={`${row.checkpointCode}-${index}`} className={row.mandatory && row.result === "Pending" ? "bg-destructive/5" : ""}>
                               <td className="px-4 py-3 min-w-44">
-                                <Select disabled={reportLocked} value={row.process} onValueChange={v => updateCheckpointRow(index, "process", v)}>
-                                  <SelectTrigger><SelectValue placeholder="Select process" /></SelectTrigger>
-                                  <SelectContent>{PROCESS_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
-                                </Select>
+                                <div className="text-sm">{row.process}</div>
                               </td>
                               <td className="px-4 py-3 min-w-32">
                                 <div className="flex items-center gap-1">
-                                  <Input readOnly value={row.checkpointCode} className="font-mono bg-muted/40" title="Auto-generated. Format managed in Admin → ID Settings." />
+                                  <span className="font-mono text-xs px-2 py-1 rounded bg-muted/40">{row.checkpointCode}</span>
                                   {row.mandatory && <Badge variant="destructive" className="text-[10px] px-1">M</Badge>}
                                 </div>
                               </td>
                               <td className="px-4 py-3 min-w-36"><Input disabled={reportLocked} value={row.accountRef} onChange={e => updateCheckpointRow(index, "accountRef", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-80"><Textarea disabled={reportLocked} value={row.checkpoint} rows={2} onChange={e => updateCheckpointRow(index, "checkpoint", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-72"><Textarea disabled={reportLocked} value={row.expectedControl} rows={2} onChange={e => updateCheckpointRow(index, "expectedControl", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-24"><Input disabled={reportLocked} type="number" min="0" value={row.sampleSize} onChange={e => updateCheckpointRow(index, "sampleSize", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-48"><Input disabled={reportLocked} value={row.evidence} onChange={e => updateCheckpointRow(index, "evidence", e.target.value)} /></td>
+                              <td className="px-4 py-3 min-w-80"><div className="text-sm whitespace-pre-wrap">{row.checkpoint}</div></td>
+                              <td className="px-4 py-3 min-w-72"><div className="text-sm whitespace-pre-wrap text-muted-foreground">{row.expectedControl}</div></td>
+                              <td className="px-4 py-3 min-w-24"><div className="text-sm">{row.sampleSize}</div></td>
+                              <td className="px-4 py-3 min-w-48"><div className="text-sm text-muted-foreground">{row.evidence}</div></td>
                               <td className="px-4 py-3 min-w-48">
                                 <label className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded border cursor-pointer hover:bg-accent ${reportLocked ? "opacity-50 pointer-events-none" : ""}`}>
                                   <Upload size={12} /> Upload
@@ -1056,11 +1052,11 @@ const AuditDetailsPage = () => {
                                 </div>
                               </td>
                               <td className="px-4 py-3 min-w-40"><Select disabled={reportLocked} value={row.result} onValueChange={value => updateCheckpointRow(index, "result", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Pending">Pending</SelectItem><SelectItem value="Compliant">Compliant</SelectItem><SelectItem value="Non-Compliant">Non-Compliant</SelectItem><SelectItem value="Observation">Observation</SelectItem><SelectItem value="Not Applicable">Not Applicable</SelectItem></SelectContent></Select></td>
-                              <td className="px-4 py-3 min-w-36"><Select disabled={reportLocked} value={row.severity} onValueChange={value => updateCheckpointRow(index, "severity", value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem><SelectItem value="High">High</SelectItem><SelectItem value="Critical">Critical</SelectItem></SelectContent></Select></td>
+                              <td className="px-4 py-3 min-w-36"><div className="text-sm"><Badge variant="outline">{row.severity}</Badge></div></td>
                               <td className="px-4 py-3 min-w-36"><Input disabled={reportLocked} type="number" min="0" value={row.exceptionValue} onChange={e => updateCheckpointRow(index, "exceptionValue", e.target.value)} /></td>
                               <td className="px-4 py-3 min-w-40"><Input disabled={reportLocked} value={row.owner} onChange={e => updateCheckpointRow(index, "owner", e.target.value)} /></td>
                               <td className="px-4 py-3 min-w-36"><Input disabled={reportLocked} type="date" value={row.targetDate} onChange={e => updateCheckpointRow(index, "targetDate", e.target.value)} /></td>
-                              <td className="px-4 py-3 min-w-72"><Textarea disabled={reportLocked} value={row.remarks} rows={2} onChange={e => updateCheckpointRow(index, "remarks", e.target.value)} /></td>
+                              <td className="px-4 py-3 min-w-72"><Textarea disabled={reportLocked} value={row.remarks} rows={2} placeholder="Record observation..." onChange={e => updateCheckpointRow(index, "remarks", e.target.value)} /></td>
                               <td className="px-4 py-3 min-w-72">
                                 <Textarea
                                   placeholder={user?.role === "reviewer" || user?.role === "admin" ? "Add reviewer comment..." : "Reviewer to comment"}
@@ -1071,7 +1067,6 @@ const AuditDetailsPage = () => {
                                   className={row.reviewerComment ? "border-primary/40 bg-primary/5" : ""}
                                 />
                               </td>
-                              <td className="px-4 py-3"><Button variant="ghost" size="icon" disabled={reportLocked || row.mandatory} onClick={() => removeCheckpointRow(index)}><Trash2 size={14} /></Button></td>
                             </tr>
                           ))}
                         </tbody>
