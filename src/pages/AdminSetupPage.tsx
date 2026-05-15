@@ -70,7 +70,114 @@ const AdminSetupPage = () => {
     toast({ title: "Master data saved", description: "Dropdown options updated for this session." });
   };
 
-  const processOptions = useMemo(() => parseLines(processText), [processText]);
+  // ----- Bulk update helpers -----
+  const checkpointsFileRef = useRef<HTMLInputElement>(null);
+  const masterFileRef = useRef<HTMLInputElement>(null);
+
+  const CP_HEADERS = ["checkpointCode","process","checkpoint","expectedControl","defaultEvidence","defaultSampleSize","defaultSeverity","weight","mandatory"] as const;
+
+  const escapeCsv = (val: unknown) => {
+    const s = String(val ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const toCsv = (headers: readonly string[], data: Record<string, unknown>[]) =>
+    [headers.join(","), ...data.map(r => headers.map(h => escapeCsv(r[h])).join(","))].join("\n");
+
+  const parseCsv = (text: string): Record<string, string>[] => {
+    const rows: string[][] = [];
+    let cur: string[] = [], field = "", inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+        else if (c === '"') inQ = false;
+        else field += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ",") { cur.push(field); field = ""; }
+        else if (c === "\n" || c === "\r") {
+          if (field !== "" || cur.length) { cur.push(field); rows.push(cur); cur = []; field = ""; }
+          if (c === "\r" && text[i+1] === "\n") i++;
+        } else field += c;
+      }
+    }
+    if (field !== "" || cur.length) { cur.push(field); rows.push(cur); }
+    if (!rows.length) return [];
+    const headers = rows[0].map(h => h.trim());
+    return rows.slice(1).filter(r => r.some(v => v && v.trim() !== "")).map(r => {
+      const obj: Record<string, string> = {};
+      headers.forEach((h, idx) => obj[h] = (r[idx] ?? "").trim());
+      return obj;
+    });
+  };
+
+  const downloadFile = (name: string, content: string) => {
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCheckpointsCsv = () => downloadFile("brd-checkpoints.csv", toCsv(CP_HEADERS, rows as unknown as Record<string, unknown>[]));
+  const downloadCheckpointsTemplate = () => downloadFile("brd-checkpoints-template.csv", CP_HEADERS.join(",") + "\n");
+
+  const importCheckpointsCsv = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = parseCsv(text);
+      if (!parsed.length) { toast({ title: "No rows found", description: "The CSV appears to be empty.", variant: "destructive" }); return; }
+      const imported: BrdCheckpoint[] = parsed.map(p => ({
+        checkpointCode: p.checkpointCode || "",
+        process: p.process || "",
+        checkpoint: p.checkpoint || "",
+        expectedControl: p.expectedControl || "",
+        defaultEvidence: p.defaultEvidence || "",
+        defaultSampleSize: Number(p.defaultSampleSize) || 0,
+        defaultSeverity: (SEVERITY_VALUES.includes(p.defaultSeverity as typeof SEVERITY_VALUES[number]) ? p.defaultSeverity : "Low") as BrdCheckpoint["defaultSeverity"],
+        weight: Number(p.weight) || 0,
+        mandatory: ["true","yes","1","y"].includes((p.mandatory || "").toLowerCase()),
+      }));
+      setRows(imported);
+      toast({ title: "Checkpoints imported", description: `${imported.length} rows loaded. Click Save Checkpoints to apply.` });
+    } catch (e) {
+      toast({ title: "Import failed", description: String(e), variant: "destructive" });
+    }
+  };
+
+  const MASTER_HEADERS = ["category","value"] as const;
+  const exportMasterCsv = () => {
+    const data: Record<string, unknown>[] = [
+      ...parseLines(processText).map(v => ({ category: "Process", value: v })),
+      ...parseLines(deptText).map(v => ({ category: "Department", value: v })),
+      ...parseLines(issueText).map(v => ({ category: "IssueCategory", value: v })),
+      ...parseLines(riskText).map(v => ({ category: "RiskClassification", value: v })),
+    ];
+    downloadFile("master-dropdowns.csv", toCsv(MASTER_HEADERS, data));
+  };
+  const downloadMasterTemplate = () => downloadFile("master-dropdowns-template.csv", "category,value\nProcess,Sample Process\nDepartment,Sample Dept\nIssueCategory,Sample Issue\nRiskClassification,Low\n");
+
+  const importMasterCsv = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = parseCsv(text);
+      if (!parsed.length) { toast({ title: "No rows found", variant: "destructive" }); return; }
+      const buckets: Record<string, string[]> = { Process: [], Department: [], IssueCategory: [], RiskClassification: [] };
+      parsed.forEach(p => {
+        const cat = (p.category || "").trim();
+        const val = (p.value || "").trim();
+        if (val && buckets[cat]) buckets[cat].push(val);
+      });
+      setProcessText(buckets.Process.join("\n"));
+      setDeptText(buckets.Department.join("\n"));
+      setIssueText(buckets.IssueCategory.join("\n"));
+      setRiskText(buckets.RiskClassification.join("\n"));
+      toast({ title: "Master data imported", description: "Click Save Master Data to apply." });
+    } catch (e) {
+      toast({ title: "Import failed", description: String(e), variant: "destructive" });
+    }
+  };
+
 
   return (
     <AppLayout title="Master Data Admin">
