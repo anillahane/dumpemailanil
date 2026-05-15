@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { Plus, Trash2, Save, Upload, Download, FileSpreadsheet } from "lucide-react";
-import { useRef } from "react";
 import {
   BRD_CHECKPOINTS,
   SEVERITY_VALUES,
