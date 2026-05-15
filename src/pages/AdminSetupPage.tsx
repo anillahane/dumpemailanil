@@ -321,6 +321,8 @@ const AdminSetupPage = () => {
             </div>
           </div>
         </section>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
