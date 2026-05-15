@@ -187,6 +187,13 @@ const AdminSetupPage = () => {
           Admin-only setup. Changes persist in-memory for the current session and reset on full page reload.
         </div>
 
+        <Tabs defaultValue="dropdowns" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
+            <TabsTrigger value="dropdowns">Master Dropdown Options</TabsTrigger>
+            <TabsTrigger value="checkpoints">BRD Checkpoint Library</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dropdowns" className="mt-0">
         {/* Master dropdowns */}
         <section className="rounded-lg border overflow-hidden">
           <div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between gap-3 flex-wrap">
