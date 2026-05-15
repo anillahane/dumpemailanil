@@ -178,6 +178,7 @@ const AdminSetupPage = () => {
     }
   };
 
+  const processOptions = useMemo(() => parseLines(processText), [processText]);
 
   return (
     <AppLayout title="Master Data Admin">
