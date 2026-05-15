@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Plus, Trash2, Save } from "lucide-react";
+import { Plus, Trash2, Save, Upload, Download, FileSpreadsheet } from "lucide-react";
 import {
   BRD_CHECKPOINTS,
   SEVERITY_VALUES,
@@ -70,6 +70,114 @@ const AdminSetupPage = () => {
     toast({ title: "Master data saved", description: "Dropdown options updated for this session." });
   };
 
+  // ----- Bulk update helpers -----
+  const checkpointsFileRef = useRef<HTMLInputElement>(null);
+  const masterFileRef = useRef<HTMLInputElement>(null);
+
+  const CP_HEADERS = ["checkpointCode","process","checkpoint","expectedControl","defaultEvidence","defaultSampleSize","defaultSeverity","weight","mandatory"] as const;
+
+  const escapeCsv = (val: unknown) => {
+    const s = String(val ?? "");
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const toCsv = (headers: readonly string[], data: Record<string, unknown>[]) =>
+    [headers.join(","), ...data.map(r => headers.map(h => escapeCsv(r[h])).join(","))].join("\n");
+
+  const parseCsv = (text: string): Record<string, string>[] => {
+    const rows: string[][] = [];
+    let cur: string[] = [], field = "", inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQ) {
+        if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+        else if (c === '"') inQ = false;
+        else field += c;
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ",") { cur.push(field); field = ""; }
+        else if (c === "\n" || c === "\r") {
+          if (field !== "" || cur.length) { cur.push(field); rows.push(cur); cur = []; field = ""; }
+          if (c === "\r" && text[i+1] === "\n") i++;
+        } else field += c;
+      }
+    }
+    if (field !== "" || cur.length) { cur.push(field); rows.push(cur); }
+    if (!rows.length) return [];
+    const headers = rows[0].map(h => h.trim());
+    return rows.slice(1).filter(r => r.some(v => v && v.trim() !== "")).map(r => {
+      const obj: Record<string, string> = {};
+      headers.forEach((h, idx) => obj[h] = (r[idx] ?? "").trim());
+      return obj;
+    });
+  };
+
+  const downloadFile = (name: string, content: string) => {
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCheckpointsCsv = () => downloadFile("brd-checkpoints.csv", toCsv(CP_HEADERS, rows as unknown as Record<string, unknown>[]));
+  const downloadCheckpointsTemplate = () => downloadFile("brd-checkpoints-template.csv", CP_HEADERS.join(",") + "\n");
+
+  const importCheckpointsCsv = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = parseCsv(text);
+      if (!parsed.length) { toast({ title: "No rows found", description: "The CSV appears to be empty.", variant: "destructive" }); return; }
+      const imported: BrdCheckpoint[] = parsed.map(p => ({
+        checkpointCode: p.checkpointCode || "",
+        process: p.process || "",
+        checkpoint: p.checkpoint || "",
+        expectedControl: p.expectedControl || "",
+        defaultEvidence: p.defaultEvidence || "",
+        defaultSampleSize: Number(p.defaultSampleSize) || 0,
+        defaultSeverity: (SEVERITY_VALUES.includes(p.defaultSeverity as typeof SEVERITY_VALUES[number]) ? p.defaultSeverity : "Low") as BrdCheckpoint["defaultSeverity"],
+        weight: Number(p.weight) || 0,
+        mandatory: ["true","yes","1","y"].includes((p.mandatory || "").toLowerCase()),
+      }));
+      setRows(imported);
+      toast({ title: "Checkpoints imported", description: `${imported.length} rows loaded. Click Save Checkpoints to apply.` });
+    } catch (e) {
+      toast({ title: "Import failed", description: String(e), variant: "destructive" });
+    }
+  };
+
+  const MASTER_HEADERS = ["category","value"] as const;
+  const exportMasterCsv = () => {
+    const data: Record<string, unknown>[] = [
+      ...parseLines(processText).map(v => ({ category: "Process", value: v })),
+      ...parseLines(deptText).map(v => ({ category: "Department", value: v })),
+      ...parseLines(issueText).map(v => ({ category: "IssueCategory", value: v })),
+      ...parseLines(riskText).map(v => ({ category: "RiskClassification", value: v })),
+    ];
+    downloadFile("master-dropdowns.csv", toCsv(MASTER_HEADERS, data));
+  };
+  const downloadMasterTemplate = () => downloadFile("master-dropdowns-template.csv", "category,value\nProcess,Sample Process\nDepartment,Sample Dept\nIssueCategory,Sample Issue\nRiskClassification,Low\n");
+
+  const importMasterCsv = async (file: File) => {
+    try {
+      const text = await file.text();
+      const parsed = parseCsv(text);
+      if (!parsed.length) { toast({ title: "No rows found", variant: "destructive" }); return; }
+      const buckets: Record<string, string[]> = { Process: [], Department: [], IssueCategory: [], RiskClassification: [] };
+      parsed.forEach(p => {
+        const cat = (p.category || "").trim();
+        const val = (p.value || "").trim();
+        if (val && buckets[cat]) buckets[cat].push(val);
+      });
+      setProcessText(buckets.Process.join("\n"));
+      setDeptText(buckets.Department.join("\n"));
+      setIssueText(buckets.IssueCategory.join("\n"));
+      setRiskText(buckets.RiskClassification.join("\n"));
+      toast({ title: "Master data imported", description: "Click Save Master Data to apply." });
+    } catch (e) {
+      toast({ title: "Import failed", description: String(e), variant: "destructive" });
+    }
+  };
+
   const processOptions = useMemo(() => parseLines(processText), [processText]);
 
   return (
@@ -81,12 +189,18 @@ const AdminSetupPage = () => {
 
         {/* Master dropdowns */}
         <section className="rounded-lg border overflow-hidden">
-          <div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between">
+          <div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-sm font-semibold">Master Dropdown Options</h2>
-              <p className="text-xs text-muted-foreground">One value per line. Used across audit forms.</p>
+              <p className="text-xs text-muted-foreground">One value per line. Used across audit forms. Bulk update via CSV (columns: category, value).</p>
             </div>
-            <Button size="sm" onClick={saveMaster}><Save size={14} /> Save Master Data</Button>
+            <div className="flex gap-2 flex-wrap">
+              <input ref={masterFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) importMasterCsv(f); e.target.value = ""; }} />
+              <Button size="sm" variant="outline" onClick={downloadMasterTemplate}><FileSpreadsheet size={14} /> Template</Button>
+              <Button size="sm" variant="outline" onClick={exportMasterCsv}><Download size={14} /> Export CSV</Button>
+              <Button size="sm" variant="outline" onClick={() => masterFileRef.current?.click()}><Upload size={14} /> Import CSV</Button>
+              <Button size="sm" onClick={saveMaster}><Save size={14} /> Save Master Data</Button>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             <div className="space-y-1.5">
@@ -115,7 +229,11 @@ const AdminSetupPage = () => {
               <h2 className="text-sm font-semibold">BRD Checkpoint Library</h2>
               <p className="text-xs text-muted-foreground">Add, edit, or remove checkpoints used to seed every audit.</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <input ref={checkpointsFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) importCheckpointsCsv(f); e.target.value = ""; }} />
+              <Button size="sm" variant="outline" onClick={downloadCheckpointsTemplate}><FileSpreadsheet size={14} /> Template</Button>
+              <Button size="sm" variant="outline" onClick={exportCheckpointsCsv}><Download size={14} /> Export CSV</Button>
+              <Button size="sm" variant="outline" onClick={() => checkpointsFileRef.current?.click()}><Upload size={14} /> Import CSV</Button>
               <Button size="sm" variant="outline" onClick={addRow}><Plus size={14} /> Add Checkpoint</Button>
               <Button size="sm" onClick={saveCheckpoints}><Save size={14} /> Save Checkpoints</Button>
             </div>
