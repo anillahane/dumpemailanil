@@ -189,12 +189,18 @@ const AdminSetupPage = () => {
 
         {/* Master dropdowns */}
         <section className="rounded-lg border overflow-hidden">
-          <div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between">
+          <div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between gap-3 flex-wrap">
             <div>
               <h2 className="text-sm font-semibold">Master Dropdown Options</h2>
-              <p className="text-xs text-muted-foreground">One value per line. Used across audit forms.</p>
+              <p className="text-xs text-muted-foreground">One value per line. Used across audit forms. Bulk update via CSV (columns: category, value).</p>
             </div>
-            <Button size="sm" onClick={saveMaster}><Save size={14} /> Save Master Data</Button>
+            <div className="flex gap-2 flex-wrap">
+              <input ref={masterFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) importMasterCsv(f); e.target.value = ""; }} />
+              <Button size="sm" variant="outline" onClick={downloadMasterTemplate}><FileSpreadsheet size={14} /> Template</Button>
+              <Button size="sm" variant="outline" onClick={exportMasterCsv}><Download size={14} /> Export CSV</Button>
+              <Button size="sm" variant="outline" onClick={() => masterFileRef.current?.click()}><Upload size={14} /> Import CSV</Button>
+              <Button size="sm" onClick={saveMaster}><Save size={14} /> Save Master Data</Button>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
             <div className="space-y-1.5">
