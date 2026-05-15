@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -187,6 +188,13 @@ const AdminSetupPage = () => {
           Admin-only setup. Changes persist in-memory for the current session and reset on full page reload.
         </div>
 
+        <Tabs defaultValue="dropdowns" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
+            <TabsTrigger value="dropdowns">Master Dropdown Options</TabsTrigger>
+            <TabsTrigger value="checkpoints">BRD Checkpoint Library</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dropdowns" className="mt-0">
         {/* Master dropdowns */}
         <section className="rounded-lg border overflow-hidden">
           <div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between gap-3 flex-wrap">
@@ -221,7 +229,9 @@ const AdminSetupPage = () => {
             </div>
           </div>
         </section>
+          </TabsContent>
 
+          <TabsContent value="checkpoints" className="mt-0">
         {/* BRD Checkpoint library */}
         <section className="rounded-lg border overflow-hidden">
           <div className="bg-muted/40 px-4 py-3 border-b flex items-center justify-between gap-3 flex-wrap">
@@ -312,6 +322,8 @@ const AdminSetupPage = () => {
             </div>
           </div>
         </section>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
