@@ -229,7 +229,11 @@ const AdminSetupPage = () => {
               <h2 className="text-sm font-semibold">BRD Checkpoint Library</h2>
               <p className="text-xs text-muted-foreground">Add, edit, or remove checkpoints used to seed every audit.</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <input ref={checkpointsFileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) importCheckpointsCsv(f); e.target.value = ""; }} />
+              <Button size="sm" variant="outline" onClick={downloadCheckpointsTemplate}><FileSpreadsheet size={14} /> Template</Button>
+              <Button size="sm" variant="outline" onClick={exportCheckpointsCsv}><Download size={14} /> Export CSV</Button>
+              <Button size="sm" variant="outline" onClick={() => checkpointsFileRef.current?.click()}><Upload size={14} /> Import CSV</Button>
               <Button size="sm" variant="outline" onClick={addRow}><Plus size={14} /> Add Checkpoint</Button>
               <Button size="sm" onClick={saveCheckpoints}><Save size={14} /> Save Checkpoints</Button>
             </div>
