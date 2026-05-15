@@ -120,61 +120,78 @@ const AdminSetupPage = () => {
               <Button size="sm" onClick={saveCheckpoints}><Save size={14} /> Save Checkpoints</Button>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/30 text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 text-left">Code</th>
-                  <th className="px-3 py-2 text-left">Process</th>
-                  <th className="px-3 py-2 text-left">Checkpoint</th>
-                  <th className="px-3 py-2 text-left">Expected Control</th>
-                  <th className="px-3 py-2 text-left">Evidence</th>
-                  <th className="px-3 py-2 text-left">Sample</th>
-                  <th className="px-3 py-2 text-left">Severity</th>
-                  <th className="px-3 py-2 text-left">Weight</th>
-                  <th className="px-3 py-2 text-left">Mandatory</th>
-                  <th className="px-3 py-2"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {rows.map((r, i) => (
-                  <tr key={i} className="align-top">
-                    <td className="px-2 py-2 min-w-28"><Input value={r.checkpointCode} onChange={e => update(i, "checkpointCode", e.target.value)} /></td>
-                    <td className="px-2 py-2 min-w-44">
-                      <Select value={r.process} onValueChange={v => update(i, "process", v)}>
-                        <SelectTrigger><SelectValue placeholder="Process" /></SelectTrigger>
-                        <SelectContent>
-                          {processOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                          {/* Allow keeping legacy process names */}
-                          {r.process && !processOptions.includes(r.process) && (
-                            <SelectItem value={r.process}>{r.process}</SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                    <td className="px-2 py-2 min-w-72"><Textarea rows={2} value={r.checkpoint} onChange={e => update(i, "checkpoint", e.target.value)} /></td>
-                    <td className="px-2 py-2 min-w-64"><Textarea rows={2} value={r.expectedControl} onChange={e => update(i, "expectedControl", e.target.value)} /></td>
-                    <td className="px-2 py-2 min-w-44"><Input value={r.defaultEvidence} onChange={e => update(i, "defaultEvidence", e.target.value)} /></td>
-                    <td className="px-2 py-2 w-20"><Input type="number" min={0} value={r.defaultSampleSize} onChange={e => update(i, "defaultSampleSize", Number(e.target.value) || 0)} /></td>
-                    <td className="px-2 py-2 min-w-32">
+          <div className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {rows.map((r, i) => (
+                <div key={i} className="rounded-xl border bg-card text-card-foreground shadow-sm p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Code</Label>
+                        <Input size={1} className="h-8 text-sm mt-0.5" value={r.checkpointCode} onChange={e => update(i, "checkpointCode", e.target.value)} placeholder="e.g. CP-001" />
+                      </div>
+                      <div>
+                        <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Process</Label>
+                        <Select value={r.process} onValueChange={v => update(i, "process", v)}>
+                          <SelectTrigger className="h-8 text-sm mt-0.5"><SelectValue placeholder="Select process" /></SelectTrigger>
+                          <SelectContent>
+                            {processOptions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                            {r.process && !processOptions.includes(r.process) && (
+                              <SelectItem value={r.process}>{r.process}</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => deleteRow(i)}>
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+
+                  <div>
+                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Checkpoint</Label>
+                    <Textarea rows={2} className="text-sm mt-0.5 resize-none" value={r.checkpoint} onChange={e => update(i, "checkpoint", e.target.value)} placeholder="Checkpoint description" />
+                  </div>
+
+                  <div>
+                    <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Expected Control</Label>
+                    <Textarea rows={2} className="text-sm mt-0.5 resize-none" value={r.expectedControl} onChange={e => update(i, "expectedControl", e.target.value)} placeholder="Expected control description" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Evidence</Label>
+                      <Input className="h-8 text-sm mt-0.5" value={r.defaultEvidence} onChange={e => update(i, "defaultEvidence", e.target.value)} placeholder="e.g. Invoice" />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Sample Size</Label>
+                      <Input type="number" min={0} className="h-8 text-sm mt-0.5" value={r.defaultSampleSize} onChange={e => update(i, "defaultSampleSize", Number(e.target.value) || 0)} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Severity</Label>
                       <Select value={r.defaultSeverity} onValueChange={v => update(i, "defaultSeverity", v as BrdCheckpoint["defaultSeverity"])}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="h-8 text-sm mt-0.5"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {SEVERITY_VALUES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                    </td>
-                    <td className="px-2 py-2 w-20"><Input type="number" min={0} value={r.weight} onChange={e => update(i, "weight", Number(e.target.value) || 0)} /></td>
-                    <td className="px-2 py-2 text-center">
-                      <input type="checkbox" checked={r.mandatory} onChange={e => update(i, "mandatory", e.target.checked)} />
-                    </td>
-                    <td className="px-2 py-2">
-                      <Button variant="ghost" size="icon" onClick={() => deleteRow(i)}><Trash2 size={14} /></Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    <div>
+                      <Label className="text-[11px] uppercase tracking-wide text-muted-foreground">Weight</Label>
+                      <Input type="number" min={0} className="h-8 text-sm mt-0.5" value={r.weight} onChange={e => update(i, "weight", Number(e.target.value) || 0)} />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <input id={`mandatory-${i}`} type="checkbox" className="h-4 w-4 rounded border-gray-300" checked={r.mandatory} onChange={e => update(i, "mandatory", e.target.checked)} />
+                    <Label htmlFor={`mandatory-${i}`} className="text-xs font-medium">Mandatory checkpoint</Label>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       </div>
